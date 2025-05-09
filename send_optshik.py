@@ -20,7 +20,7 @@ def save(data):
 def send(card):
     body = {
         "chatId": CHAT,
-        "url": card["imageUrl"],
+        "urlFile": card["imageUrl"],
         "fileName": "photo.jpg",
         "caption": card["caption"]
     }
