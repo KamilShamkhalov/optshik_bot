@@ -1,0 +1,19 @@
+name: OptShik bot
+on:
+  schedule:
+    - cron: '0 7  * * *'   # 09:00 Amsterdam
+    - cron: '0 18 * * *'   # 20:00 Amsterdam
+  workflow_dispatch:
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - run: pip install -r requirements.txt
+      - env:
+          INSTANCE_ID: "1103238860"
+          TOKEN: "ВАШ_Токен"
+          CHAT_ID: "120363418071156614@g.us"
+        run: python send_optshik.py
