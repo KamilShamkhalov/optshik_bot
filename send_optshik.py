@@ -5,7 +5,8 @@ ID   = os.getenv("INSTANCE_ID")
 KEY  = os.getenv("TOKEN")
 CHAT = os.getenv("CHAT_ID")
 
-API = f"https://{ID}.api.green-api.com/waInstance{ID}/sendFileByUrl/{KEY}"
+API_BASE = "https://api.green-api.com"
+API      = f"{API_BASE}/waInstance{ID}/sendFileByUrl/{KEY}"
 TZ  = tz.gettz("Europe/Amsterdam")
 
 def load():
