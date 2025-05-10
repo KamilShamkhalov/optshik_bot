@@ -37,7 +37,7 @@ def main():
     save(items)
     
     if not items[:3]:
-    print("⚠️  items list empty – nothing to send")
+        print("⚠️  items list empty – nothing to send")
 
 if __name__ == "__main__":
     main()
