@@ -19,9 +19,6 @@ def csv_to_cards(csv_path: str = "catalog.csv") -> list[dict]:
 
 if __name__ == "__main__":
     cards = csv_to_cards()
-    # сохраняем результат во временный файл — убедитесь что всё ок
-    pathlib.Path("content.preview.json").write_text(
-        json.dumps(cards, ensure_ascii=False, indent=2),
-        encoding="utf-8"
-    )
-    print(f"Converted {len(cards)} rows → content.preview.json")
+    with open("content.json", "w", encoding="utf-8") as f:
+        json.dump(cards, f, ensure_ascii=False, indent=2)
+    print(f"Converted {len(cards)} rows → content.json")
