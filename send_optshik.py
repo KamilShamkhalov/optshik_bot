@@ -24,6 +24,8 @@ def send(card):
         "fileName": "photo.jpg",
         "caption": card["caption"]
     }
+    
+    print("➡️  sending:", card["caption"].splitlines()[0], "—", card["imageUrl"][:50])
     requests.post(API, json=body, timeout=20).raise_for_status()
 
 def main():
@@ -33,6 +35,9 @@ def main():
         send(it)
         it["lastSent"] = now
     save(items)
+    
+    if not items[:3]:
+    print("⚠️  items list empty – nothing to send")
 
 if __name__ == "__main__":
     main()
