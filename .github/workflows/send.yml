@@ -18,6 +18,9 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      - name: Build content.json from catalog.csv
+        run: python csv2json.py
+
       - run: python send_optshik.py
         env:
           INSTANCE_ID: "1103238860"
