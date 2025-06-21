@@ -114,24 +114,32 @@ async def send_one_product():
 
 
 def assign_queue_position(product_id: int):
-    """Insert product at the beginning of the queue."""
+    """Insert or move product to the beginning of the queue."""
     with sqlite3.connect(db_path) as conn:
         cur = conn.cursor()
-        cur.execute(
-            "SELECT queue_pos FROM products WHERE id = ?", (product_id,)
-        )
-        existing = cur.fetchone()
-        if existing and existing[0] is not None:
-            print(f"Product already queued: {product_id} at {existing[0]}")
+        cur.execute("SELECT queue_pos FROM products WHERE id = ?", (product_id,))
+        row = cur.fetchone()
+        if row is None:
+            print(f"Product not found: {product_id}")
             return
+
+        current_pos = row[0]
+
+        if current_pos is not None:
+            # Remove product from its current position
+            cur.execute(
+                "UPDATE products SET queue_pos = queue_pos - 1 WHERE queue_pos > ?",
+                (current_pos,),
+            )
+
+        # Shift everyone down and put this product first
         cur.execute(
             "UPDATE products SET queue_pos = queue_pos + 1 WHERE queue_pos IS NOT NULL"
         )
-        cur.execute(
-            "UPDATE products SET queue_pos = 1 WHERE id = ?", (product_id,)
-        )
+        cur.execute("UPDATE products SET queue_pos = 1 WHERE id = ?", (product_id,))
+
         conn.commit()
-        print(f"Inserted product {product_id} at queue start")
+        print(f"Product {product_id} moved to queue start")
 
 
 if __name__ == "__main__":
