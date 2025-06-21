@@ -14,7 +14,7 @@ db_path = "green_shop.db"
 
 
 def initialize_db():
-    """Ensure queue_pos column exists and queue numbers are consecutive."""
+    """Ensure queue_pos column exists and all products have sequential positions."""
     with sqlite3.connect(db_path) as conn:
         cur = conn.cursor()
         cur.execute("PRAGMA table_info(products)")
@@ -22,11 +22,20 @@ def initialize_db():
         if "queue_pos" not in columns:
             cur.execute("ALTER TABLE products ADD COLUMN queue_pos INTEGER")
             conn.commit()
-        # normalize existing queue order
-        cur.execute("SELECT id FROM products WHERE queue_pos IS NOT NULL ORDER BY queue_pos")
-        ids = [row[0] for row in cur.fetchall()]
-        for pos, prod_id in enumerate(ids, start=1):
-            cur.execute("UPDATE products SET queue_pos = ? WHERE id = ?", (pos, prod_id))
+
+        cur.execute(
+            "SELECT id FROM products WHERE queue_pos IS NOT NULL ORDER BY queue_pos"
+        )
+        queued_ids = [row[0] for row in cur.fetchall()]
+        cur.execute("SELECT id FROM products WHERE queue_pos IS NULL")
+        new_ids = [row[0] for row in cur.fetchall()]
+        ordered_ids = queued_ids + new_ids
+
+        for pos, prod_id in enumerate(ordered_ids, start=1):
+            cur.execute(
+                "UPDATE products SET queue_pos = ? WHERE id = ?",
+                (pos, prod_id),
+            )
         conn.commit()
 
 
@@ -79,8 +88,13 @@ async def send_one_product():
             return
 
         product_id, file_id, title, price, current_pos = row
-        cur.execute("UPDATE products SET queue_pos = NULL WHERE id = ?", (product_id,))
-        cur.execute("UPDATE products SET queue_pos = queue_pos - 1 WHERE queue_pos > ?", (current_pos,))
+        cur.execute(
+            "UPDATE products SET queue_pos = NULL WHERE id = ?", (product_id,)
+        )
+        cur.execute(
+            "UPDATE products SET queue_pos = queue_pos - 1 WHERE queue_pos > ?",
+            (current_pos,),
+        )
         conn.commit()
 
     photo_path = await download_file_from_telegram(file_id)
@@ -100,24 +114,29 @@ async def send_one_product():
 
 
 def assign_queue_position(product_id: int):
-    """Add product to the end of the queue if not already queued."""
+    """Insert product at the beginning of the queue."""
     with sqlite3.connect(db_path) as conn:
         cur = conn.cursor()
-        cur.execute("SELECT queue_pos FROM products WHERE id = ?", (product_id,))
+        cur.execute(
+            "SELECT queue_pos FROM products WHERE id = ?", (product_id,)
+        )
         existing = cur.fetchone()
         if existing and existing[0] is not None:
             print(f"Product already queued: {product_id} at {existing[0]}")
             return
-        cur.execute("SELECT MAX(queue_pos) FROM products")
-        max_pos = cur.fetchone()[0]
-        new_pos = (max_pos or 0) + 1
-        cur.execute("UPDATE products SET queue_pos = ? WHERE id = ?", (new_pos, product_id))
+        cur.execute(
+            "UPDATE products SET queue_pos = queue_pos + 1 WHERE queue_pos IS NOT NULL"
+        )
+        cur.execute(
+            "UPDATE products SET queue_pos = 1 WHERE id = ?", (product_id,)
+        )
         conn.commit()
-        print(f"Assigned product {product_id} to position {new_pos}")
+        print(f"Inserted product {product_id} at queue start")
 
 
 if __name__ == "__main__":
     initialize_db()
     import sys
+
     if "--scheduled" in sys.argv:
         asyncio.run(send_one_product())
